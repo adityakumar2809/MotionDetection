@@ -16,18 +16,25 @@ args = vars(ap.parse_args())
 
 # if the video argument is None, then we are reading from webcam
 if args.get("video", None) is None:
-	vs = VideoStream(src=0).start()
-	time.sleep(2.0)
+    vs = VideoStream(src=0).start()
+    fps = 30
+    time.sleep(2.0)
 # otherwise, we are reading from a video file
 else:
-	vs = cv2.VideoCapture(args["video"])
+    vs = cv2.VideoCapture(args["video"])
+    fps = vs.get(5)
+
+print('FPS: ', fps)
 
 # initialize the first frame in the video stream
 firstFrame = None
+frame_count = 0
+previous_text = "Unoccupied"
 
 # loop over the frames of the video
 while True:
     frame = vs.read()
+    frame_count += 1
 
     if args.get("video", None) is not None:
         frame = frame[1]
@@ -71,6 +78,13 @@ while True:
         (x, y, w, h) = cv2.boundingRect(c)
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         text = "Occupied"
+        
+    if previous_text == "Unoccupied" and text == 'Occupied':
+        print('Frame count: ', frame_count)
+        print('Entry time: ', frame_count/fps)
+        previous_text = "Occupied"
+    elif text == 'Unoccupied':
+        previous_text = "Unoccupied"
 
     # draw the text and timestamp on the frame
     cv2.putText(
