@@ -126,7 +126,12 @@ def saveCapturedMovement(
     return
 
 
-def checkForMotion(video_object=None, arguments=None, fps=30):
+def checkForMotion(
+        video_object=None,
+        arguments=None,
+        fps=30,
+        refresh_frame_count=200
+    ):
     '''Check for motion in the frames'''
     if video_object is None or arguments is None:
         return -1
@@ -139,6 +144,10 @@ def checkForMotion(video_object=None, arguments=None, fps=30):
     while(True):
         frame = video_object.read()
         frame_count += 1
+        motion_detected = False
+
+        if frame_count % refresh_frame_count == 0:
+            frame_of_reference = None
 
         if arguments.get('video', None) is not None:
             frame = frame[1]
@@ -190,7 +199,7 @@ def main():
     '''Driver Function'''
     arguments = checkForArguments(default_min_area=200)
     video_object, fps = getVideoCaptureObject(arguments=arguments)
-    checkForMotion(video_object, arguments, fps)
+    checkForMotion(video_object, arguments, fps, refresh_frame_count=200)
     killWindowsAndObjects(video_object, arguments)
 
 
