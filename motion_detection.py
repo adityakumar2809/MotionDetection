@@ -95,13 +95,46 @@ def markObjectBoundary(frame, contour):
     return frame
 
 
-def checkForMotion(video_object=None, arguments=None):
+def saveCapturedMovement(
+        frame,
+        frame_count,
+        fps,
+        arguments,
+        directory_name='captured_movements'
+    ):
+    '''Save the frames with detected motion'''
+    directory_name = 'captured_movements'
+    
+    if arguments['video'] is not None:
+        sub_path_name = arguments['video'].split('/')[-1]
+        ext_index = sub_path_name.rindex('.')
+        sub_path_name = sub_path_name[:ext_index]
+    else:
+        sub_path_name = (
+            'stream_' + datetime.datetime.now().strftime("%d%m%Y")
+        )
+
+    time_of_appearance = round(frame_count/fps)
+    frame_name = f'frame_{frame_count}_{time_of_appearance}'
+
+
+    cv2.imwrite(
+        f'{directory_name}/{sub_path_name}_{frame_name}.jpg',
+        frame
+    )
+
+    return
+
+
+def checkForMotion(video_object=None, arguments=None, fps=30):
     '''Check for motion in the frames'''
     if video_object is None or arguments is None:
         return -1
     
     frame_count = 0
     frame_of_reference = None
+    motion_detected = False
+    continuous_motion_detected = False
 
     while(True):
         frame = video_object.read()
@@ -127,6 +160,13 @@ def checkForMotion(video_object=None, arguments=None):
         for contour in contours:
             if cv2.contourArea(contour) > arguments['min_area']:
                 resized_frame = markObjectBoundary(resized_frame, contour)
+                motion_detected = True
+
+        if motion_detected and not continuous_motion_detected:
+            continuous_motion_detected = True
+            saveCapturedMovement(resized_frame, frame_count, fps, arguments)
+        elif not motion_detected:
+            continuous_motion_detected = False
 
         cv2.imshow('Security Feed', resized_frame)
 
@@ -150,9 +190,8 @@ def main():
     '''Driver Function'''
     arguments = checkForArguments(default_min_area=200)
     video_object, fps = getVideoCaptureObject(arguments=arguments)
-    checkForMotion(video_object, arguments)
+    checkForMotion(video_object, arguments, fps)
     killWindowsAndObjects(video_object, arguments)
-
 
 
 if __name__ == '__main__':
