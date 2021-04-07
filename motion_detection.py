@@ -86,6 +86,13 @@ def getFrameDifferenceContours(
     return contours
 
 
+def markObjectBoundary(frame, contour):
+    '''Mark the object being detected in the frame'''
+    (x, y, w, h) = cv2.boundingRect(contour)
+    frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    return frame
+
+
 def checkForMotion(video_object=None, arguments=None):
     '''Check for motion in the frames'''
     if video_object is None or arguments is None:
@@ -104,16 +111,27 @@ def checkForMotion(video_object=None, arguments=None):
         if frame is None:
             break
 
-        preprocessed_frame = preprocessFrame(frame)
+        frame = preprocessFrame(frame)
 
         if frame_of_reference is None:
-            frame_of_reference = preprocessed_frame
+            frame_of_reference = frame
             continue
 
         contours = getFrameDifferenceContours(
-            preprocessed_frame,
+            frame,
             frame_of_reference
         )
+
+        for contour in contours:
+            if cv2.contourArea(contour) > arguments['min_area']:
+                frame = markObjectBoundary(frame, contour)
+
+        cv2.imshow('Security Feed', frame)
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord("q"):
+            break
 
 
 def main():
