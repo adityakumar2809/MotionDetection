@@ -41,6 +41,40 @@ def getVideoCaptureObject(
         fps = video_object.get(5)
 
 
+def preprocessFrame(frame, width=500, kernel_size=(21, 21)):
+    '''Preprocess frame for motion detection'''
+    frame = imutils.resize(frame, width=width)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    preprocessed_frame = cv2.GaussianBlur(frame, kernel_size, 0)
+    
+    return preprocessed_frame
+
+
+def checkForMotion(video_object=None, arguments=None):
+    '''Check for motion in the frames'''
+    if video_object is None or arguments is None:
+        return -1
+    
+    frame_count = 0
+    frame_of_reference = None
+
+    while(True):
+        frame = video_object.read()
+        frame_count += 1
+
+        if arguments.get('video', None) is not None:
+            frame = frame[1]
+
+        if frame is None:
+            break
+
+        preprocessed_frame = preprocessFrame(frame)
+
+        if frame_of_reference is None:
+            frame_of_reference = preprocessed_frame
+            continue
+
+
 def main():
     pass
 
