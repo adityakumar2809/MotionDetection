@@ -27,6 +27,20 @@ def checkForArguments(default_min_area=200):
     return arguments
 
 
+def getVideoCaptureObject(
+        arguments=None,
+        video_stream_source=0,
+        video_stream_fps=30
+    ):
+    '''Create an object to capture video clip or stream'''
+    if arguments.get('video', None) is None:
+        video_object = VideoStream(src=video_stream_source).start()
+        fps = video_stream_fps
+    else:
+        video_object = cv2.VideoCapture(arguments['video'])
+        fps = video_object.get(5)
+
+
 def main():
     pass
 
