@@ -40,14 +40,16 @@ def getVideoCaptureObject(
         video_object = cv2.VideoCapture(arguments['video'])
         fps = video_object.get(5)
 
+    return video_object, fps
+
 
 def preprocessFrame(frame, width=500, kernel_size=(21, 21)):
     '''Preprocess frame for motion detection'''
-    frame = imutils.resize(frame, width=width)
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    preprocessed_frame = cv2.GaussianBlur(frame, kernel_size, 0)
+    resized_frame = imutils.resize(frame, width=width)
+    preprocessed_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
+    preprocessed_frame = cv2.GaussianBlur(preprocessed_frame, kernel_size, 0)
     
-    return preprocessed_frame
+    return resized_frame, preprocessed_frame
 
 
 def getFrameDifferenceContours(
@@ -62,10 +64,10 @@ def getFrameDifferenceContours(
     frame_delta = cv2.absdiff(frame_of_reference, frame)
     
     thresh_object = cv2.threshold(
-        source=frame_delta,
-        thresholdValue=thresh_value,
-        maxVal=thresh_max_val,
-        thresholdingTechnique=cv2.THRESH_BINARY
+        src=frame_delta,
+        thresh=thresh_value,
+        maxval=thresh_max_val,
+        type=cv2.THRESH_BINARY
     )
     thresh_frame = thresh_object[1]
 
@@ -111,22 +113,22 @@ def checkForMotion(video_object=None, arguments=None):
         if frame is None:
             break
 
-        frame = preprocessFrame(frame)
+        resized_frame, processed_frame = preprocessFrame(frame)
 
         if frame_of_reference is None:
-            frame_of_reference = frame
+            frame_of_reference = processed_frame
             continue
 
         contours = getFrameDifferenceContours(
-            frame,
+            processed_frame,
             frame_of_reference
         )
 
         for contour in contours:
             if cv2.contourArea(contour) > arguments['min_area']:
-                frame = markObjectBoundary(frame, contour)
+                resized_frame = markObjectBoundary(resized_frame, contour)
 
-        cv2.imshow('Security Feed', frame)
+        cv2.imshow('Security Feed', resized_frame)
 
         key = cv2.waitKey(1) & 0xFF
 
@@ -147,7 +149,7 @@ def killWindowsAndObjects(video_object, arguments):
 def main():
     '''Driver Function'''
     arguments = checkForArguments(default_min_area=200)
-    video_object = getVideoCaptureObject(arguments=arguments)
+    video_object, fps = getVideoCaptureObject(arguments=arguments)
     checkForMotion(video_object, arguments)
     killWindowsAndObjects(video_object, arguments)
 
