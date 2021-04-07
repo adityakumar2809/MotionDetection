@@ -134,8 +134,23 @@ def checkForMotion(video_object=None, arguments=None):
             break
 
 
+def killWindowsAndObjects(video_object, arguments):
+    '''Kill all dangling windows and objects'''
+    if arguments.get('video', None) is None:
+        video_object.stop()
+    else:
+        video_object.release()
+    
+    cv2.destroyAllWindows()
+
+
 def main():
-    pass
+    '''Driver Function'''
+    arguments = checkForArguments(default_min_area=200)
+    video_object = getVideoCaptureObject(arguments=arguments)
+    checkForMotion(video_object, arguments)
+    killWindowsAndObjects(video_object, arguments)
+
 
 
 if __name__ == '__main__':
