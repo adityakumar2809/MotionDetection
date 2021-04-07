@@ -50,6 +50,42 @@ def preprocessFrame(frame, width=500, kernel_size=(21, 21)):
     return preprocessed_frame
 
 
+def getFrameDifferenceContours(
+        frame,
+        frame_of_reference,
+        thresh_value=50,
+        thresh_max_val=255,
+        dilation_kernel=None,
+        dilation_iter=2
+    ):
+    '''Calculate the difference between current and reference frame'''
+    frame_delta = cv2.absdiff(frame_of_reference, frame)
+    
+    thresh_object = cv2.threshold(
+        source=frame_delta,
+        thresholdValue=thresh_value,
+        maxVal=thresh_max_val,
+        thresholdingTechnique=cv2.THRESH_BINARY
+    )
+    thresh_frame = thresh_object[1]
+
+    dilated_frame = cv2.dilate(
+        thresh_frame,
+        kernel=dilation_kernel,
+        iterations=dilation_iter
+    )
+
+    contours = cv2.findContours(
+        dilated_frame.copy(),
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    contours = imutils.grab_contours(contours)
+
+    return contours
+
+
 def checkForMotion(video_object=None, arguments=None):
     '''Check for motion in the frames'''
     if video_object is None or arguments is None:
@@ -73,6 +109,11 @@ def checkForMotion(video_object=None, arguments=None):
         if frame_of_reference is None:
             frame_of_reference = preprocessed_frame
             continue
+
+        contours = getFrameDifferenceContours(
+            preprocessed_frame,
+            frame_of_reference
+        )
 
 
 def main():
