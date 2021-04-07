@@ -11,18 +11,32 @@ from imutils.video import VideoStream
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", help="path to the video file")
 ap.add_argument("-a", "--min-area", type=int,
-                default=5000, help="minimum area size")
+                default=200, help="minimum area size")
 args = vars(ap.parse_args())
 
 # if the video argument is None, then we are reading from webcam
 if args.get("video", None) is None:
     vs = VideoStream(src=0).start()
+    frame = vs.read()
     fps = 30
+    size = (frame.shape[1], frame.shape[0])
+    # Store video if it is streamed live
+    current_date_time = datetime.datetime.now().strftime("%d%m%Y_%I%M%S%p")
+    filename = f'recordings/Recording_{current_date_time}.avi'
+    recording = cv2.VideoWriter(
+        filename, 
+        cv2.VideoWriter_fourcc(*'XVID'),
+        fps,
+        size
+    )
     time.sleep(2.0)
 # otherwise, we are reading from a video file
 else:
     vs = cv2.VideoCapture(args["video"])
     fps = vs.get(5)
+
+    frame = vs.read()
+    size = (int(vs.get(4)), int(vs.get(3)))
 
 print('FPS: ', fps)
 
@@ -30,6 +44,9 @@ print('FPS: ', fps)
 firstFrame = None
 frame_count = 0
 previous_text = "Unoccupied"
+
+flag_new_entry = 0
+
 
 # loop over the frames of the video
 while True:
@@ -83,13 +100,17 @@ while True:
         print('Frame count: ', frame_count)
         print('Entry time: ', frame_count/fps)
         previous_text = "Occupied"
+        flag_new_entry = 1
     elif text == 'Unoccupied':
         previous_text = "Unoccupied"
+        flag_new_entry = 0
+    elif previous_text == 'Occupied':
+        flag_new_entry = 0
 
     # draw the text and timestamp on the frame
     cv2.putText(
         frame,
-        "Room Status: {}".format(text),
+        "Frame Status: {}".format(text),
         (10, 20),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,
@@ -106,6 +127,15 @@ while True:
         (0, 0, 255),
         1
     )
+
+    if flag_new_entry == 1:
+        cv2.imwrite(
+            'captured_movements/frame_' + str(frame_count) + '.jpg',
+            frame
+        )
+
+    if args.get("video", None) is None:
+        recording.write(frame)
 	
     # show the frame and record if the user presses a key
     cv2.imshow("Security Feed", frame)
@@ -118,8 +148,10 @@ while True:
     if key == ord("q"):
         break
 
-    time.sleep(0.03)
+    # time.sleep(0.03)
 
 # cleanup the camera and close any open windows
 vs.stop() if args.get("video", None) is None else vs.release()
+if args.get("video", None) is None:
+    recording.release()
 cv2.destroyAllWindows()
