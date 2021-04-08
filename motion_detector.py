@@ -47,11 +47,17 @@ previous_text = "Unoccupied"
 
 flag_new_entry = 0
 
+refresh_rate = 200
+
 
 # loop over the frames of the video
 while True:
     frame = vs.read()
     frame_count += 1
+
+    if frame_count % 200 == 0:
+        firstFrame = None
+
 
     if args.get("video", None) is not None:
         frame = frame[1]
